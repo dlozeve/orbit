@@ -70,7 +70,17 @@ update dt (Body m pos speed) neighbours =
         newspeed = speed + dt *^ accel
         newpos = pos + dt *^ P newspeed
 
-
+-- Update all bodies with a timestep dt
+updateAll :: Double -> [Body] -> [Body]
+updateAll dt bodies = aux [] [] bodies
+  where
+    -- Cycles through all bodies, updates each one and stores it in
+    -- res. Each body already updated is moved to prev.
+    aux res prev [] = res
+    aux res prev (b:next) =
+          aux (newb:res) (b:prev) next
+          where newb = update dt b $ prev ++ next
+                    
 --------------------------------------------------------------------------------
 -- EXAMPLES
 --------------------------------------------------------------------------------
