@@ -89,3 +89,9 @@ b1 = Body 42 (P $ V3 0 0 0) (V3 0 0 0)
 b2 = Body 11 (P $ V3 1 2 3) (V3 0 0 0)
 b3 = Body 5 (P $ V3 5 2 1) (V3 0 0 0)
 
+-- Astronomical Unit
+au :: Double
+au = 149597870700
+
+sun  = Body 1.98855e30 (P $ V3 0 0 0) (V3 0 0 0)
+earth = Body 8.97237e24 (P $ V3 au 0 0) (V3 0 29.78e3 0)
