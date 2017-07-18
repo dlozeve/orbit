@@ -1,11 +1,17 @@
 module Lib (
   gravity,
   Body,
+  bodyName,
+  bodyMass,
+  bodyPosition,
+  bodySpeed,
   bodyDistance,
   field,
   acceleration,
   update,
-  b1, b2, b3
+  updateAll,
+  b1, b2, b3,
+  au, sun, earth, moon
   ) where
 
 import Linear.Vector
@@ -27,9 +33,10 @@ gravity = 6.67408e-11
 
 -- Body
 data Body = Body {
-  bodyMass :: Double,
-  bodyPosition :: Point V3 Double,
-  bodySpeed :: V3 Double
+  bodyName :: String,
+  bodyMass :: Double, -- [kg]
+  bodyPosition :: Point V3 Double, -- [m]
+  bodySpeed :: V3 Double -- [m/s]
   } deriving (Show, Eq)
 
 
@@ -64,9 +71,9 @@ acceleration body = foldr f (fromInteger 0)
 
 -- Update speed and position with using a timestep dt
 update :: Double -> Body -> [Body] -> Body
-update dt (Body m pos speed) neighbours =
-  Body m newpos newspeed
-  where accel = acceleration (Body m pos speed) neighbours
+update dt (Body name m pos speed) neighbours =
+  Body name m newpos newspeed
+  where accel = acceleration (Body name m pos speed) neighbours
         newspeed = speed + dt *^ accel
         newpos = pos + dt *^ P newspeed
 
@@ -85,13 +92,14 @@ updateAll dt bodies = aux [] [] bodies
 -- EXAMPLES
 --------------------------------------------------------------------------------
 
-b1 = Body 42 (P $ V3 0 0 0) (V3 0 0 0)
-b2 = Body 11 (P $ V3 1 2 3) (V3 0 0 0)
-b3 = Body 5 (P $ V3 5 2 1) (V3 0 0 0)
+b1 = Body "b1" 42e12 (P $ V3 0 0 0) (V3 0 0 0)
+b2 = Body "b2" 11e12 (P $ V3 1 2 3) (V3 0 3e3 0)
+b3 = Body "b3" 5e12 (P $ V3 5 2 1) (V3 3e3 1e3 0)
 
--- Astronomical Unit
+-- Astronomical Unit [m]
 au :: Double
 au = 149597870700
 
-sun  = Body 1.98855e30 (P $ V3 0 0 0) (V3 0 0 0)
-earth = Body 8.97237e24 (P $ V3 au 0 0) (V3 0 29.78e3 0)
+sun  = Body "Sun" 1.98855e30 (P $ V3 0 0 0) (V3 0 0 0)
+earth = Body "Earth" 8.97237e24 (P $ V3 au 0 0) (V3 0 29.78e3 0)
+moon = Body "Moon" 7.342e22 (P $ V3 (au+384399e3) 0 0) (V3 0 (29.78e3+1022) 0)
