@@ -24,4 +24,4 @@ steps n dt bodies = do
   steps (n-1) dt (updateAll dt bodies)
 
 main :: IO ()
-main = steps 1000000 10 [sun, earth, moon]
+main = steps 1000000 10 [sun, earth, moon, mercury, venus, mars]

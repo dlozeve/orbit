@@ -11,7 +11,7 @@ module Lib (
   update,
   updateAll,
   b1, b2, b3,
-  au, sun, earth, moon
+  au, sun, earth, moon, mercury, venus, mars
   ) where
 
 import Linear.Vector
@@ -103,3 +103,6 @@ au = 149597870700
 sun  = Body "Sun" 1.98855e30 (P $ V3 0 0 0) (V3 0 0 0)
 earth = Body "Earth" 8.97237e24 (P $ V3 au 0 0) (V3 0 29.78e3 0)
 moon = Body "Moon" 7.342e22 (P $ V3 (au+384399e3) 0 0) (V3 0 (29.78e3+1022) 0)
+mercury = Body "Mercury" 3.3011e23 (P $ V3 57909050000 0 0) (V3 0 47362 0)
+venus = Body "Venus" 4.8675e24 (P $ V3 108208000000 0 0) (V3 0 35.02e3 0)
+mars = Body "Mars" 6.4171e23 (P $ V3 227.9392e9 0 0) (V3 0 24.077e3 0)
