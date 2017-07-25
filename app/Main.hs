@@ -7,23 +7,33 @@ import Linear.V3
 
 import Graphics.Gloss hiding (Point)
 
+
+--------------------------------------------------------------------------------
+-- CSV export
+--------------------------------------------------------------------------------
+
 csvFromPoint :: Point V3 Double -> String
 csvFromPoint (P (V3 x y z)) =
   show x ++ "," ++ show y ++ "," ++ show z
 
 csvFromBodies :: [Body] -> [String]
-csvFromBodies [] = []
-csvFromBodies (x:xs) =
-  (bodyName x ++ ","
-    ++ (show $ bodyMass x) ++ ","
-    ++ (csvFromPoint $ bodyPosition x) ++ "\n")
-  :(csvFromBodies xs)
+csvFromBodies =
+  map (\ x ->
+         bodyName x ++
+        "," ++
+        show (bodyMass x) ++
+        "," ++ csvFromPoint (bodyPosition x) ++ "\n")
   
 steps :: Int -> Double -> [Body] -> IO ()
 steps 0 _ _ = return ()
 steps n dt bodies = do
-  putStr . concat $ map ((++) (show n ++ ",")) $ csvFromBodies bodies
+  putStr . concat $ map ((show n ++ ",") ++) $ csvFromBodies bodies
   steps (n-1) dt (updateAll dt bodies)
+
+
+--------------------------------------------------------------------------------
+-- Gloss
+--------------------------------------------------------------------------------
 
 width, height, offset :: Int
 width = 1000
@@ -38,7 +48,7 @@ displayBody b = translate (realToFrac x/1e9) (realToFrac y/1e9) $ circle (realTo
   where P (V3 x y _) = bodyPosition b
 
 displayBodies :: [Body] -> Picture
-displayBodies = (color white) . Pictures . (map displayBody)
+displayBodies = color white . Pictures . map displayBody
 
 drawing :: Picture
 drawing = color white $ circle 80

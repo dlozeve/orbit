@@ -1,11 +1,6 @@
 module Lib (
   gravity,
-  Body,
-  bodyName,
-  bodyRadius,
-  bodyMass,
-  bodyPosition,
-  bodySpeed,
+  Body(..),
   bodyDistance,
   field,
   acceleration,
@@ -55,14 +50,14 @@ bodyDistance body1 body2 =
 -- Field created by a body on a certain position
 field :: Body -> Point V3 Double -> V3 Double
 field body pos =
-  unP $ (gravity * m / r**2) *^ (normalize vec)
+  unP $ (gravity * m / r**2) *^ normalize vec
   where m = bodyMass body
-        vec = (bodyPosition body) - pos
+        vec = bodyPosition body - pos
         r = norm vec
 
 -- Acceleration given to a body by its neighbours
 acceleration :: Body -> [Body] -> V3 Double
-acceleration body = foldr f (fromInteger 0)
+acceleration body = foldr f 0
   where f neighbour acc =
           acc + field neighbour (bodyPosition body)
 
@@ -81,7 +76,7 @@ update dt (Body name r m pos speed) neighbours =
 
 -- Update all bodies with a timestep dt
 updateAll :: Double -> [Body] -> [Body]
-updateAll dt bodies = aux [] [] bodies
+updateAll dt = aux [] []
   where
     -- Cycles through all bodies, updates each one and stores it in
     -- res. Each body already updated is moved to prev.
