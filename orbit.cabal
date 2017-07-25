@@ -27,6 +27,7 @@ executable orbit-exe
   build-depends:       base
                      , orbit
                      , linear
+                     , random
                      , gloss
   default-language:    Haskell2010
 
