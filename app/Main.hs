@@ -41,25 +41,46 @@ randomBody = do
 -- CSV export
 --------------------------------------------------------------------------------
 
-csvFromPoint :: Point V3 Double -> String
-csvFromPoint (P (V3 x y z)) =
+-- | Show a Vector as CSV
+csvFromVector :: V3 Double -> String
+csvFromVector (V3 x y z) =
   show x ++ "," ++ show y ++ "," ++ show z
 
-csvFromBodies :: [Body] -> [String]
-csvFromBodies =
-  map (\ x ->
-         bodyName x ++
-        "," ++
-        show (bodyMass x) ++
-        "," ++ csvFromPoint (bodyPosition x) ++ "\n")
-  
-steps :: Int -> Double -> [Body] -> IO ()
-steps 0 _ _ = return ()
-steps n dt bodies = do
-  putStr . concat $ map ((show n ++ ",") ++) $ csvFromBodies bodies
-  steps (n-1) dt (updateAll dt bodies)
+-- | show a Point as CSV
+csvFromPoint :: Point V3 Double -> String
+csvFromPoint (P v) = csvFromVector v
 
+-- | Show a Body as CSV
+csvFromBody :: Double -> Body -> String
+csvFromBody dt b =
+  show dt ++ "," ++
+  csvFromPoint (bodyPosition b) ++ "," ++
+  csvFromVector (bodySpeed b) ++ "\n"
 
+-- | Show a list of bodies as CSV
+csvFromBodies :: Double -> [Body] -> String
+csvFromBodies dt bs = concat $ map (csvFromBody dt) bs
+
+-- | Compute all the steps of the simulation
+steps :: Double -- ^ The time step
+  -> [Body] -- ^ The initial state (list of bodies)
+  -> [(Double, [Body])] -- ^ List of successive states with the
+                        -- corresponding time
+steps dt b = zip (iterate (dt +) 0) (iterate (updateAll dt) b)
+
+-- | Show all the steps as CSV
+csvFromInit :: Int -- ^ The number of time steps to keep
+  -> Double -- ^ The time step
+  -> [Body] -- ^ The initial state (list of bodies)
+  -> String -- ^ CSV data
+csvFromInit n dt b = concat . take n $ map (uncurry csvFromBodies) (steps dt b)
+
+main :: IO ()
+main = do
+  bodies <- replicateM 100 randomBody
+  putStrLn $ csvFromInit 10000 1e-1 bodies
+
+{-
 --------------------------------------------------------------------------------
 -- Gloss
 --------------------------------------------------------------------------------
@@ -93,6 +114,4 @@ main = do
     displayBodies
     (\_ dt bs -> updateAll (realToFrac dt*1e6) bs)
 
---main :: IO ()
---main = steps 1000000 10 [sun, earth, moon, mercury, venus, mars]
-
+-}
