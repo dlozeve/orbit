@@ -28,7 +28,7 @@ executable orbit-exe
                      , orbit
                      , linear
                      , random
-                     , gloss
+                     --, gloss
   default-language:    Haskell2010
 
 test-suite orbit-test

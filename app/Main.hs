@@ -8,7 +8,7 @@ import Linear.V3
 import System.Random
 import Control.Monad (replicateM)
 
-import Graphics.Gloss hiding (Point)
+--import Graphics.Gloss hiding (Point)
 
 
 --------------------------------------------------------------------------------
