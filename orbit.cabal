@@ -10,7 +10,7 @@ maintainer:          dimitri.lozeve@gmail.com
 copyright:           2017 Dimitri Lozeve
 category:            Science
 build-type:          Simple
-extra-source-files:  README.md
+extra-source-files:  README.org
 cabal-version:       >=1.10
 
 library

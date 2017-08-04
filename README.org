@@ -1,0 +1,7 @@
+#+TITLE: orbit
+#+AUTHOR: Dimitri Lozeve
+
+[[https://travis-ci.org/dlozeve/orbit][https://travis-ci.org/dlozeve/orbit.svg?branch=master]]
+[[https://opensource.org/licenses/BSD-3-Clause][https://img.shields.io/badge/License-BSD%203--Clause-blue.svg]]
+
+Simple N-body simulator.
