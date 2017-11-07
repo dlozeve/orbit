@@ -214,15 +214,15 @@ updateAll dt = aux [] []
 --------------------------------------------------------------------------------
 
 -- | Astronomical Unit [m]
-au :: Double
-au = 149597870700
+astronomicalUnit :: Double
+astronomicalUnit = 149597870700
 
 -- | The Sun
 sun  = Body "Sun" 695700000 1.98855e30 (P $ V3 0 0 0) (V3 0 0 0)
 -- | The Earth
-earth = Body "Earth" 6.371e6  8.97237e24 (P $ V3 au 0 0) (V3 0 29.78e3 0)
+earth = Body "Earth" 6.371e6  8.97237e24 (P $ V3 astronomicalUnit 0 0) (V3 0 29.78e3 0)
 -- | The Moon
-moon = Body "Moon" 1.7371e6 7.342e22 (P $ V3 (au+384399e3) 0 0) (V3 0 (29.78e3+1022) 0)
+moon = Body "Moon" 1.7371e6 7.342e22 (P $ V3 (astronomicalUnit+384399e3) 0 0) (V3 0 (29.78e3+1022) 0)
 -- | Mercury
 mercury = Body "Mercury" 2.4397e6 3.3011e23 (P $ V3 57909050000 0 0) (V3 0 47362 0)
 -- | Venus
