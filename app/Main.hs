@@ -55,8 +55,8 @@ csvFromPoint (P v) = csvFromVector v
 csvFromBody :: Double -> Body -> String
 csvFromBody dt b =
   show dt ++ "," ++
-  csvFromPoint (bodyPosition b) ++ "," ++
-  csvFromVector (bodySpeed b) ++ "\n"
+  csvFromPoint (_bodyPosition b) ++ "," ++
+  csvFromVector (_bodySpeed b) ++ "\n"
 
 -- | Show a list of bodies as CSV
 csvFromBodies :: Double -> [Body] -> String

@@ -5,12 +5,23 @@ Copyright   : (c) Dimitri Lozeve, 2017
 License     : BSD3
 Maintainer  : dimitri.lozeve@gmail.com
 -}
+
+{-# LANGUAGE TemplateHaskell #-}
+
 module Lib (
   -- * Constants
   gravity,
   -- * Body type
   Body(..),
   bodyDistance,
+  -- * Barnes-Hut
+  Region(..),
+  Octree(..),
+  Octant(..),
+  selectOctant,
+  subOctree,
+  updateRegion,
+  insertBody,
   -- * Gravity force
   field,
   acceleration,
@@ -26,6 +37,8 @@ import Linear.V3
 import Linear.Affine
 import Linear.Metric
 
+import Control.Lens hiding (Empty)
+
 --------------------------------------------------------------------------------
 -- CONSTANTS
 --------------------------------------------------------------------------------
@@ -40,18 +53,115 @@ gravity = 6.67408e-11
 
 -- | Body type
 data Body = Body {
-  bodyName :: String, -- ^ Name
-  bodyRadius :: Double, -- ^ Radius [m]
-  bodyMass :: Double, -- ^ Mass [kg]
-  bodyPosition :: Point V3 Double, -- ^ Position [m]
-  bodySpeed :: V3 Double -- ^ Speed [m/s]
+  _bodyName :: String, -- ^ Name
+  _bodyRadius :: Double, -- ^ Radius [m]
+  _bodyMass :: Double, -- ^ Mass [kg]
+  _bodyPosition :: Point V3 Double, -- ^ Position [m]
+  _bodySpeed :: V3 Double -- ^ Speed [m/s]
   } deriving (Show, Eq)
+
+makeLenses ''Body
 
 
 -- | Distance between two bodies
 bodyDistance :: Body -> Body -> Double
 bodyDistance body1 body2 =
-  distance (bodyPosition body1) (bodyPosition body2)
+  distance (_bodyPosition body1) (_bodyPosition body2)
+
+
+--------------------------------------------------------------------------------
+-- BARNES-HUT
+--------------------------------------------------------------------------------
+
+-- | Region type, represents a region in space
+data Region = Region {
+  _regionCenter :: Point V3 Double,
+  _regionCenterOfMass :: Point V3 Double,
+  _regionMass :: Double,
+  _regionDiameter :: Double
+  } deriving (Show, Eq)
+
+makeLenses ''Region
+
+-- | Main data structure for the Octree
+data Octree = Empty Region
+            | Single Region Body
+            | Node Region Octree Octree Octree Octree Octree Octree Octree Octree
+  deriving (Show, Eq)
+
+-- | One of the 8 octants from a given reference point
+data Octant = NED | NWD | SWD | SED
+            | NEU | NWU | SWU | SEU
+  deriving (Show, Eq)
+
+-- | Return the octant in which is located a body
+selectOctant :: Point V3 Double -> Body -> Octant
+selectOctant center body = aux $ _bodyPosition body .-. center
+  where aux (V3 x y z) = case (x > 0, y > 0, z > 0) of
+          (True, True, True) -> NEU
+          (True, True, False) -> NED
+          (True, False, True) -> SEU
+          (True, False, False) -> SED
+          (False, True, True) -> NWU
+          (False, True, False) -> NWD
+          (False, False, True) -> SWU
+          (False, False, False) -> SWD
+
+-- | Create a subtree for a given Region and Octant
+subOctree :: Region -> Octant -> Octree
+subOctree r octant =
+  Empty (r & regionDiameter .~ newdiameter
+          & regionCenter %~ (+ ((newdiameter/2) *^ centershift)))
+  where newdiameter = (r ^. regionDiameter) / 2
+        centershift = case octant of
+          NED -> P $ V3 1 1 (-1)
+          NWD -> P $ V3 (-1) 1 (-1)
+          SWD -> P $ V3 (-1) (-1) (-1)
+          SED -> P $ V3 1 (-1) (-1)
+          NEU -> P $ V3 1 1 1
+          NWU -> P $ V3 (-1) 1 1
+          SWU -> P $ V3 (-1) (-1) 1
+          SEU -> P $ V3 1 (-1) 1
+
+-- | Update the mass and the center of mass of a region when adding a
+-- new Body
+updateRegion :: Body -> Region -> Region
+updateRegion b r =
+  r & regionMass .~ newmass
+  & regionCenterOfMass .~ newcenter
+  where newmass = _regionMass r + _bodyMass b
+        newcenter = ((_regionMass r *^ _regionCenterOfMass r) + (_bodyMass b *^ _bodyPosition b))
+                    ^/ (_regionMass r + _bodyMass b)
+
+-- | Insert a new body in an Octree
+insertBody :: Body -> Octree -> Octree
+insertBody b t = case t of
+  -- If it is empty, we turn it into a singleton Region, adjusting its
+  -- mass and center of mass. However, if the body is too far away
+  -- (i.e. outside the diameter of the Region), we just ignore it.
+  Empty r -> if distance (_bodyPosition b) (_regionCenter r) > (_regionDiameter r / 2)
+             then Empty r
+             else Single (updateRegion b r) b
+  -- If it is a singleton, we create the 8 subtrees and we insert the
+  -- two bodies in them. We will end up in the Node case below.
+  Single r b' ->
+    insertBody b $ insertBody b' $
+                 Node r (subOctree r NED) (subOctree r NWD) (subOctree r SWD) (subOctree r SED)
+                 (subOctree r NEU) (subOctree r NWU) (subOctree r SWU) (subOctree r SEU)
+  -- Finally, if it is already a tree, we have to choose in which
+  -- octant inserting the new body.
+  Node r ned nwd swd sed neu nwu swu seu ->
+    let r' = updateRegion b r
+    in
+      case (selectOctant (r ^. regionCenter) b) of
+        NED -> Node r' (insertBody b ned) nwd swd sed neu nwu swu seu
+        NWD -> Node r' ned (insertBody b nwd) swd sed neu nwu swu seu
+        SWD -> Node r' ned nwd (insertBody b swd) sed neu nwu swu seu
+        SED -> Node r' ned nwd swd (insertBody b sed) neu nwu swu seu
+        NEU -> Node r' ned nwd swd sed (insertBody b neu) nwu swu seu
+        NWU -> Node r' ned nwd swd sed neu (insertBody b nwu) swu seu
+        SWU -> Node r' ned nwd swd sed neu nwu (insertBody b swu) seu
+        SEU -> Node r' ned nwd swd sed neu nwu swu (insertBody b seu)
 
 
 --------------------------------------------------------------------------------
@@ -62,15 +172,15 @@ bodyDistance body1 body2 =
 field :: Body -> Point V3 Double -> V3 Double
 field body pos =
   unP $ (gravity * m / r**2) *^ normalize vec
-  where m = bodyMass body
-        vec = bodyPosition body - pos
+  where m = _bodyMass body
+        vec = _bodyPosition body - pos
         r = norm vec
 
 -- | Acceleration given to a body by its neighbours
 acceleration :: Body -> [Body] -> V3 Double
 acceleration body = foldr f 0
   where f neighbour acc =
-          acc + field neighbour (bodyPosition body)
+          acc + field neighbour (_bodyPosition body)
 
 
 --------------------------------------------------------------------------------
