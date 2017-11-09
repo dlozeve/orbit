@@ -22,6 +22,7 @@ module Lib (
   subOctree,
   updateRegion,
   insertBody,
+  buildTree,
   -- * Gravity force
   field,
   acceleration,
@@ -31,6 +32,9 @@ module Lib (
   -- * Examples
   au, sun, earth, moon, mercury, venus, mars
   ) where
+
+import Data.List
+import Data.Foldable
 
 import Linear.Vector
 import Linear.V3
@@ -162,6 +166,27 @@ insertBody b t = case t of
         NWU -> Node r' ned nwd swd sed neu (insertBody b nwu) swu seu
         SWU -> Node r' ned nwd swd sed neu nwu (insertBody b swu) seu
         SEU -> Node r' ned nwd swd sed neu nwu swu (insertBody b seu)
+
+
+-- | Build a Barnes-Hut Octree from a list of Bodies
+buildTree :: [Body] -> Octree
+buildTree bs = foldr insertBody (Empty r) bs
+  where r = Region { _regionCenter = center,
+                     _regionCenterOfMass = center,
+                     _regionMass = 0,
+                     _regionDiameter = diameter
+                   }
+        -- We determine the initial center and diameter of the region
+        -- using the positions of all input bodies.
+        positions :: [Point V3 Double]
+        positions = map (flip (^.) bodyPosition) bs
+        -- The center is just the geometric center of all positions.
+        center :: Point V3 Double
+        center = (sum $ positions) ^/ (fromIntegral $ length positions)
+        -- The diameter is the maximum range of the coordinates. This
+        -- is roughly 2x more what is needed.
+        diameter :: Double
+        diameter = maximum $ map (\xs -> maximum xs - minimum xs) $ transpose $ map toList positions
 
 
 --------------------------------------------------------------------------------
