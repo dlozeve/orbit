@@ -76,7 +76,7 @@ csvFromInit :: Int -- ^ The number of time steps to keep
   -> Double -- ^ The Barnes-Hut threshold theta
   -> [Body] -- ^ The initial state (list of bodies)
   -> String -- ^ CSV data
-csvFromInit n dt theta b = concat . take n $ map (uncurry csvFromBodies) (steps dt theta b)
+csvFromInit n dt theta b = concat $ map (uncurry csvFromBodies) (take n $ steps dt theta b)
 
 main :: IO ()
 main = do
