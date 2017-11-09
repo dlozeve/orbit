@@ -28,6 +28,7 @@ module Lib (
   acceleration,
   -- * Simulation
   update,
+  updateAll,
   -- * Examples
   au, sun, earth, moon, mercury, venus, mars
   ) where
@@ -244,6 +245,18 @@ update dt theta tree (Body name r m pos speed) =
   where accel = acceleration theta tree (Body name r m pos speed)
         newspeed = speed + dt *^ accel
         newpos = pos + dt *^ P newspeed
+
+
+-- | Update all Bodies with a time step dt and a Barnes-Hut threshold
+-- theta
+updateAll :: Double -- ^ The time step
+  -> Double -- ^ The Barnes-Hut threshold theta
+  -> [Body] -- ^ A list of Bodies
+  -> [Body] -- ^ The updated list of Bodies
+updateAll dt theta bs =
+  map (update dt theta tree) bs
+  where tree = buildTree bs
+
 
 
 --------------------------------------------------------------------------------

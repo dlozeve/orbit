@@ -64,22 +64,24 @@ csvFromBodies dt bs = concat $ map (csvFromBody dt) bs
 
 -- | Compute all the steps of the simulation
 steps :: Double -- ^ The time step
+  -> Double -- ^ The Barnes-Hut threshold theta
   -> [Body] -- ^ The initial state (list of bodies)
   -> [(Double, [Body])] -- ^ List of successive states with the
                         -- corresponding time
-steps dt b = zip (iterate (dt +) 0) (iterate (updateAll dt) b)
+steps dt theta b = zip (iterate (dt +) 0) (iterate (updateAll dt theta) b)
 
 -- | Show all the steps as CSV
 csvFromInit :: Int -- ^ The number of time steps to keep
   -> Double -- ^ The time step
+  -> Double -- ^ The Barnes-Hut threshold theta
   -> [Body] -- ^ The initial state (list of bodies)
   -> String -- ^ CSV data
-csvFromInit n dt b = concat . take n $ map (uncurry csvFromBodies) (steps dt b)
+csvFromInit n dt theta b = concat . take n $ map (uncurry csvFromBodies) (steps dt theta b)
 
 main :: IO ()
 main = do
   bodies <- replicateM 100 randomBody
-  putStrLn $ csvFromInit 100000 60 bodies
+  putStrLn $ csvFromInit 100000 60 0.5 bodies
 
 {-
 --------------------------------------------------------------------------------
