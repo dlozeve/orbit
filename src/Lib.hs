@@ -28,7 +28,6 @@ module Lib (
   acceleration,
   -- * Simulation
   update,
-  updateAll,
   -- * Examples
   au, sun, earth, moon, mercury, venus, mars
   ) where
@@ -207,10 +206,27 @@ field body pos =
         r = norm vec
 
 -- | Acceleration given to a body by its neighbours
-acceleration :: Body -> [Body] -> V3 Double
-acceleration body = foldr f 0
-  where f neighbour acc =
-          acc + field neighbour (_bodyPosition body)
+acceleration :: Double -> Octree -> Body -> V3 Double
+acceleration theta tree body = case tree of
+  Empty _ -> V3 0 0 0
+  Single _ b ->
+    if _bodyPosition b == _bodyPosition body then V3 0 0 0
+    else field b (_bodyPosition body)
+  Node r ned nwd swd sed neu nwu swu seu ->
+    let s = _regionDiameter r
+        vec = _regionCenterOfMass r - _bodyPosition body
+        d = norm vec in
+      if s/d < theta then
+        unP $ (gravity * _regionMass r / d**2) *^ normalize vec
+      else
+        acceleration theta ned body +
+        acceleration theta nwd body +
+        acceleration theta swd body +
+        acceleration theta sed body +
+        acceleration theta neu body +
+        acceleration theta nwu body +
+        acceleration theta swu body +
+        acceleration theta seu body
 
 
 --------------------------------------------------------------------------------
@@ -219,26 +235,17 @@ acceleration body = foldr f 0
 
 -- | Update speed and position
 update :: Double -- ^ The time step
+  -> Double -- ^ The theta threshold parameter for Barnes-Hut
+  -> Octree -- ^ The Barnes-Hut Octree
   -> Body -- ^ The body to update
-  -> [Body] -- ^ The Body's neighbours
   -> Body -- ^ The updated Body
-update dt (Body name r m pos speed) neighbours =
+update dt theta tree (Body name r m pos speed) =
   Body name r m newpos newspeed
-  where accel = acceleration (Body name r m pos speed) neighbours
+  where accel = acceleration theta tree (Body name r m pos speed)
         newspeed = speed + dt *^ accel
         newpos = pos + dt *^ P newspeed
 
--- | Update all bodies with a timestep dt
-updateAll :: Double -> [Body] -> [Body]
-updateAll dt = aux [] []
-  where
-    -- Cycles through all bodies, updates each one and stores it in
-    -- res. Each body already updated is moved to prev.
-    aux res prev [] = res
-    aux res prev (b:next) =
-          aux (newb:res) (b:prev) next
-          where newb = update dt b $ prev ++ next
-                    
+
 --------------------------------------------------------------------------------
 -- EXAMPLES
 --------------------------------------------------------------------------------
