@@ -143,7 +143,7 @@ insertBody b t = case t of
   -- If it is empty, we turn it into a singleton Region, adjusting its
   -- mass and center of mass. However, if the body is too far away
   -- (i.e. outside the diameter of the Region), we just ignore it.
-  Empty r -> if distance (_bodyPosition b) (_regionCenter r) > (_regionDiameter r / 2)
+  Empty r -> if distance (_bodyPosition b) (_regionCenter r) > (_regionDiameter r)
              then Empty r
              else Single (updateRegion b r) b
   -- If it is a singleton, we create the 8 subtrees and we insert the
@@ -170,6 +170,11 @@ insertBody b t = case t of
 
 -- | Build a Barnes-Hut Octree from a list of Bodies
 buildTree :: [Body] -> Octree
+buildTree [] = Empty (Region { _regionCenter = P $ V3 0 0 0,
+                               _regionCenterOfMass = P $ V3 0 0 0,
+                               _regionMass = 0,
+                               _regionDiameter = 0
+                             })
 buildTree bs = foldr insertBody (Empty r) bs
   where r = Region { _regionCenter = center,
                      _regionCenterOfMass = center,
