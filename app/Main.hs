@@ -8,8 +8,6 @@ import Linear.V3
 import System.Random
 import Control.Monad (replicateM)
 
---import Graphics.Gloss hiding (Point)
-
 
 --------------------------------------------------------------------------------
 -- Random body generation
@@ -83,38 +81,3 @@ main = do
   bodies <- replicateM 100 randomBody
   putStrLn $ csvFromInit 10000 (60*20) 0.5 bodies
 
-{-
---------------------------------------------------------------------------------
--- Gloss
---------------------------------------------------------------------------------
-
-width, height, offset :: Int
-width = 1000
-height = 750
-offset = 100
-
-window :: Display
-window = InWindow "Orbit" (width, height) (offset, offset)
-
-displayBody :: Body -> Picture
-displayBody b = translate (realToFrac x) (realToFrac y) $ circle (realToFrac (bodyRadius b))
-  where P (V3 x y _) = bodyPosition b
-
-displayBodies :: [Body] -> Picture
-displayBodies = color white . Pictures . map displayBody
-
-drawing :: Picture
-drawing = color white $ circle 80
-
-main :: IO ()
-main = do
-  bodies <- replicateM 300 randomBody
-  simulate
-    window
-    black
-    25
-    bodies
-    displayBodies
-    (\_ dt bs -> updateAll (realToFrac dt*1e6) bs)
-
--}
