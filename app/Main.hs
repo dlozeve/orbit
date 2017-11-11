@@ -81,7 +81,7 @@ csvFromInit n dt theta b = concat $ map (uncurry csvFromBodies) (take n $ steps 
 main :: IO ()
 main = do
   bodies <- replicateM 100 randomBody
-  putStrLn $ csvFromInit 100000 60 0.5 bodies
+  putStrLn $ csvFromInit 10000 (60*20) 0.5 bodies
 
 {-
 --------------------------------------------------------------------------------
