@@ -30,7 +30,7 @@ module Lib (
   update,
   updateAll,
   -- * Examples
-  au, sun, earth, moon, mercury, venus, mars
+  astronomicalUnit, sun, earth, moon, mercury, venus, mars
   ) where
 
 import Data.List
