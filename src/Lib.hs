@@ -43,6 +43,9 @@ import Linear.Metric
 
 import Control.Lens hiding (Empty)
 
+import Control.Parallel.Strategies
+import Control.DeepSeq
+
 --------------------------------------------------------------------------------
 -- CONSTANTS
 --------------------------------------------------------------------------------
@@ -66,6 +69,10 @@ data Body = Body {
 
 makeLenses ''Body
 
+instance NFData Body where
+  rnf (Body name radius mass pos speed) =
+    rnf name `seq` rnf radius `seq` rnf mass `seq` rnf pos `seq` rnf speed
+
 
 -- | Distance between two bodies
 bodyDistance :: Body -> Body -> Double
@@ -87,11 +94,22 @@ data Region = Region {
 
 makeLenses ''Region
 
+instance NFData Region where
+  rnf (Region c cm m d) =
+    rnf c `seq` rnf cm `seq` rnf m `seq` rnf d
+
 -- | Main data structure for the Octree
 data Octree = Empty Region
             | Single Region Body
             | Node Region Octree Octree Octree Octree Octree Octree Octree Octree
   deriving (Show, Eq)
+
+instance NFData Octree where
+  rnf (Empty r) = rnf r
+  rnf (Single r b) = rnf r `seq` rnf b
+  rnf (Node r o1 o2 o3 o4 o5 o6 o7 o8) =
+    rnf r `seq` rnf o1 `seq` rnf o2 `seq` rnf o3 `seq` rnf o4
+    `seq` rnf o5 `seq` rnf o6 `seq` rnf o7 `seq` rnf o8
 
 -- | One of the 8 octants from a given reference point
 data Octant = NED | NWD | SWD | SED
@@ -254,8 +272,9 @@ updateAll :: Double -- ^ The time step
   -> [Body] -- ^ A list of Bodies
   -> [Body] -- ^ The updated list of Bodies
 updateAll dt theta bs =
-  map (update dt theta tree) bs
-  where tree = buildTree bs
+  let
+    tree = buildTree bs
+  in parMap (rparWith rdeepseq) (update dt theta tree) bs
 
 
 
