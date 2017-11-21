@@ -232,7 +232,7 @@ buildTree bs = foldr insertBody (Empty r) bs
 -- | Field created by a body on a certain position
 field :: Body -> Point V3 Double -> V3 Double
 field body pos =
-  unP $ (gravity * m / r**2) *^ normalize vec
+  unP $ (gravity * m / r**3) *^ vec
   where m = _bodyMass body
         vec = _bodyPosition body - pos
         r = norm vec
@@ -249,7 +249,7 @@ acceleration theta tree body = case tree of
         vec = _regionCenterOfMass r - _bodyPosition body
         d = norm vec in
       if s/d < theta then
-        unP $ (gravity * _regionMass r / d**2) *^ normalize vec
+        unP $ (gravity * _regionMass r / d**3) *^ vec
       else
         acceleration theta ned body +
         acceleration theta nwd body +
