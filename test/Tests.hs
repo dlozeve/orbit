@@ -40,19 +40,15 @@ unitTests = testGroup "Unit tests"
     $ updateAll 1 1 [] @?= []
   , testCase "updateAll 0 0.5 [earth]"
     $ updateAll 0 0.5 [earth] @?= [earth]
+  , testCase "isEmpty $ buildTree []"
+    $ assertBool "buildTree [] is not Empty" (isEmpty $ buildTree [])
   ]
 
 instance (Arbitrary a) => Arbitrary (V3 a) where
-  arbitrary = do
-    x <- arbitrary
-    y <- arbitrary
-    z <- arbitrary
-    return $ V3 x y z
-
+  arbitrary = V3 <$> arbitrary <*> arbitrary <*> arbitrary
+  
 instance (Arbitrary (f a)) => Arbitrary (Point f a) where
-  arbitrary = do
-    x <- arbitrary
-    return $ P x
+  arbitrary = P <$> arbitrary
 
 instance Arbitrary Body where
   arbitrary = do
@@ -63,8 +59,40 @@ instance Arbitrary Body where
     speed <- arbitrary
     return $ Body name radius mass pos speed
 
+instance Arbitrary Region where
+  arbitrary = do
+    center <- arbitrary
+    centerOfMass <- arbitrary
+    Positive mass <- arbitrary
+    Positive diameter <- arbitrary
+    return $ Region center centerOfMass mass diameter
+
+instance Arbitrary Octant where
+  arbitrary = oneof $ map return [NED, NWD, SWD, SED, NEU, NWU, SWU, SEU]
+
+instance Arbitrary Octree where
+  arbitrary = sized genOctree
+
+genOctree :: Int -> Gen Octree
+genOctree 0 = Empty <$> arbitrary
+genOctree n =
+  let m = n `div` 2
+      genSubtree = genOctree m
+  in
+    oneof [ Empty <$> arbitrary
+          , Single <$> arbitrary <*> arbitrary
+          , Node <$> arbitrary <*> genSubtree <*> genSubtree <*> genSubtree <*>
+            genSubtree <*> genSubtree <*> genSubtree <*> genSubtree <*> genSubtree
+          ]
+    
+  
+
 propertyChecks :: TestTree
 propertyChecks = testGroup "Property tests (QuickCheck)"
   [ QC.testProperty "updateAll of a singleton"
     $ \body -> updateAll 0 0.5 ([body] :: [Body]) == [body]
+  , QC.testProperty "buildTree of a singleton"
+    $ \body -> isSingle (buildTree [body])
+  , QC.testProperty "buildTree of many bodies"
+    $ \bodies -> (length bodies < 2) || isNode (buildTree bodies)
   ]

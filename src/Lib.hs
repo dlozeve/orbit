@@ -17,6 +17,7 @@ module Lib (
   -- * Barnes-Hut
   Region(..),
   Octree(..),
+  isEmpty, isSingle, isNode,
   Octant(..),
   selectOctant,
   subOctree,
@@ -103,6 +104,18 @@ data Octree = Empty Region
             | Single Region Body
             | Node Region Octree Octree Octree Octree Octree Octree Octree Octree
   deriving (Show, Eq)
+
+isEmpty :: Octree -> Bool
+isEmpty (Empty _) = True
+isEmpty _ = False
+
+isSingle :: Octree -> Bool
+isSingle (Single _ _) = True
+isSingle _ = False
+
+isNode :: Octree -> Bool
+isNode (Node _ _ _ _ _ _ _ _ _) = True
+isNode _ = False
 
 instance NFData Octree where
   rnf (Empty r) = rnf r
