@@ -42,7 +42,29 @@ unitTests = testGroup "Unit tests"
     $ updateAll 0 0.5 [earth] @?= [earth]
   ]
 
+instance (Arbitrary a) => Arbitrary (V3 a) where
+  arbitrary = do
+    x <- arbitrary
+    y <- arbitrary
+    z <- arbitrary
+    return $ V3 x y z
+
+instance (Arbitrary (f a)) => Arbitrary (Point f a) where
+  arbitrary = do
+    x <- arbitrary
+    return $ P x
+
+instance Arbitrary Body where
+  arbitrary = do
+    name <- arbitrary
+    Positive radius <- arbitrary
+    Positive mass <- arbitrary
+    pos <- arbitrary
+    speed <- arbitrary
+    return $ Body name radius mass pos speed
+
 propertyChecks :: TestTree
 propertyChecks = testGroup "Property tests (QuickCheck)"
-  [
+  [ QC.testProperty "updateAll of a singleton"
+    $ \body -> updateAll 0 0.5 ([body] :: [Body]) == [body]
   ]
