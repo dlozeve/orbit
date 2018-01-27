@@ -32,6 +32,8 @@ executable orbit-exe
                      , linear
                      , random
                      , gloss
+                     , optparse-applicative
+                     , safe
   default-language:    Haskell2010
 
 test-suite orbit-test

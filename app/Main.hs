@@ -10,6 +10,9 @@ import Control.Monad (replicateM)
 
 import Graphics.Gloss hiding (Point)
 
+import Options.Applicative
+import Data.Semigroup ((<>))
+import Safe
 
 --------------------------------------------------------------------------------
 -- Random body generation
@@ -78,6 +81,65 @@ csvFromInit :: Int -- ^ The number of time steps to keep
   -> String -- ^ CSV data
 csvFromInit n dt theta b = concat $ map (uncurry csvFromBodies) (take n $ steps dt theta b)
 
+--------------------------------------------------------------------------------
+-- Commandline arguments
+--------------------------------------------------------------------------------
+
+data CmdLineOptions = CmdLineOptions
+  { optionNumberBodies :: Int
+  , optionColor :: Color
+  , optionFPS :: Int
+  }
+
+numberBodiesParser :: Parser Int
+numberBodiesParser = option auto
+  (long "number-bodies"
+   <> short 'n'
+   <> help "Number of Bodies"
+   <> showDefault
+   <> value 300
+   <> metavar "N")
+
+fpsParser :: Parser Int
+fpsParser = option auto
+  (long "fps"
+   <> help "Frame rate"
+   <> showDefault
+   <> value 25
+   <> metavar "FPS")
+
+splitOn :: Char -> String -> [String]
+splitOn c s = case dropWhile (== c) s of
+                "" -> []
+                s' -> w : splitOn c s''
+                  where (w, s'') = break (== c) s'
+
+colorParser :: Parser Color
+colorParser = option (eitherReader readRGB)
+  (long "color"
+   <> short 'c'
+   <> help "Foreground color RGBA (0-255)"
+   <> showDefault
+   <> value white
+   <> metavar "R,G,B")
+  where readRGB  s =
+          case mapM readEitherSafe $ splitOn ',' s of
+            Right (r:g:b:a:_) -> Right $ makeColorI r g b a
+            Right (r:g:b:_) -> Right $ makeColorI r g b 255
+            Right (r:g:_) -> Right $ makeColorI r g 255 255
+            Right (r:_) -> Right $ makeColorI r 255 255 255
+            Right  _  -> Right $ makeColorI 255 255 255 255
+            Left s -> Left s
+
+optionsParser :: Parser CmdLineOptions
+optionsParser = CmdLineOptions <$>
+  numberBodiesParser <*> colorParser <*> fpsParser
+
+opts :: ParserInfo CmdLineOptions
+opts = info (optionsParser <**> helper)
+  (fullDesc
+   <> progDesc "Barnes-Hut N-body simulator"
+   <> header "orbit")
 
 --------------------------------------------------------------------------------
 -- Gloss
@@ -92,22 +154,20 @@ window :: Display
 window = InWindow "Orbit" (width, height) (offset, offset)
 
 displayBody :: Body -> Picture
-displayBody b = translate (realToFrac x) (realToFrac y) $ circle (realToFrac (_bodyRadius b))
+displayBody b = translate (realToFrac x) (realToFrac y) $ circleSolid (realToFrac (_bodyRadius b))
   where P (V3 x y _) = _bodyPosition b
 
-displayBodies :: [Body] -> Picture
-displayBodies = color white . Pictures . map displayBody
-
-drawing :: Picture
-drawing = color white $ circle 80
+displayBodies :: Color -> [Body] -> Picture
+displayBodies c = color c . Pictures . map displayBody
 
 main :: IO ()
 main = do
-  bodies <- replicateM 300 randomBody
+  CmdLineOptions n c fps <- execParser opts
+  bodies <- replicateM n randomBody
   simulate
     window
     black
-    25
+    fps
     bodies
-    displayBodies
+    (displayBodies c)
     (\_ dt bs -> updateAll (realToFrac dt*1e6) 0.5 bs)
